@@ -1,0 +1,85 @@
+{
+  "$comment": "Nuclear reactor ICS detection rules. Code vs data alada -- notun rule add korte ekhane JSON likho, Python code chuite hobe na (Sherlock pattern).",
+  "fields": {
+    "temp":     {"source": "hr", "index": 0, "label": "Core Temperature (C)"},
+    "press":    {"source": "hr", "index": 1, "label": "Coolant Pressure (bar)"},
+    "flow":     {"source": "hr", "index": 2, "label": "Coolant Flow (%)"},
+    "rod":      {"source": "hr", "index": 3, "label": "Control Rod Position (%)"},
+    "power":    {"source": "hr", "index": 4, "label": "Reactor Power (MW)"},
+    "pump_rpm": {"source": "hr", "index": 5, "label": "Coolant Pump RPM"},
+    "pump_on":  {"source": "co", "index": 0, "label": "Coolant Pump ON"},
+    "safety":   {"source": "co", "index": 1, "label": "Safety Injection ON"},
+    "scram":    {"source": "co", "index": 2, "label": "SCRAM (shutdown) ON"}
+  },
+  "rules": [
+    {
+      "id": "TEMP_HIGH",
+      "type": "threshold", "field": "temp", "op": "gt", "value": 360,
+      "severity": "WARNING",
+      "message": "Core temperature uchu -- cooling somossha hote pare."
+    },
+    {
+      "id": "TEMP_CRITICAL",
+      "type": "threshold", "field": "temp", "op": "gt", "value": 400,
+      "severity": "CRITICAL",
+      "message": "Core temperature BIPODJONOK -- meltdown risk."
+    },
+    {
+      "id": "PRESS_LOW",
+      "type": "threshold", "field": "press", "op": "lt", "value": 120,
+      "severity": "WARNING",
+      "message": "Coolant pressure kom -- LOCA (leak) hote pare."
+    },
+    {
+      "id": "PRESS_HIGH",
+      "type": "threshold", "field": "press", "op": "gt", "value": 175,
+      "severity": "WARNING",
+      "message": "Coolant pressure beshi -- over-pressure risk."
+    },
+    {
+      "id": "FLOW_LOW",
+      "type": "threshold", "field": "flow", "op": "lt", "value": 50,
+      "severity": "CRITICAL",
+      "message": "Coolant flow bhishon kom -- core thanda hocche na."
+    },
+    {
+      "id": "ROD_WITHDRAWN",
+      "type": "threshold", "field": "rod", "op": "gt", "value": 90,
+      "severity": "WARNING",
+      "message": "Control rod pray puro bera -- prompt-criticality er kache."
+    },
+    {
+      "id": "ROD_EJECTION",
+      "type": "rate", "field": "rod", "max_delta": 15,
+      "severity": "CRITICAL",
+      "message": "Control rod HOTHAT druto tene newa holo -- rod-ejection attack (Stuxnet-style)."
+    },
+    {
+      "id": "PUMP_TRIP_AT_POWER",
+      "type": "combo", "severity": "CRITICAL",
+      "all": [
+        {"field": "pump_on", "op": "eq", "value": 0},
+        {"field": "power",   "op": "gt", "value": 100}
+      ],
+      "message": "Coolant pump BONDHO othocho reactor chalu -- loss-of-coolant attack."
+    },
+    {
+      "id": "PUMP_ACTUATOR_MISMATCH",
+      "type": "combo", "severity": "WARNING",
+      "all": [
+        {"field": "pump_on",  "op": "eq", "value": 1},
+        {"field": "pump_rpm", "op": "lt", "value": 200}
+      ],
+      "message": "Pump ON command ache kintu RPM pray 0 -- actuator/sensor mismatch (spoofing?)."
+    },
+    {
+      "id": "OVERHEAT_NO_SAFETY",
+      "type": "combo", "severity": "CRITICAL",
+      "all": [
+        {"field": "temp",   "op": "gt", "value": 380},
+        {"field": "safety", "op": "eq", "value": 0}
+      ],
+      "message": "Core gorom othocho safety-injection OFF -- safety system sabotage."
+    }
+  ]
+}
