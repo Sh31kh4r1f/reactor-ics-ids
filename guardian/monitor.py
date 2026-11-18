@@ -19,6 +19,7 @@ from rich.panel import Panel
 from rich.text import Text
 
 from guardian.rules import RuleEngine
+from guardian.logger import ForensicLogger
 
 console = Console()
 
@@ -75,10 +76,12 @@ def main():
     ap.add_argument("--slave", type=int, default=1)
     ap.add_argument("--interval", type=float, default=1.0)
     ap.add_argument("--once", action="store_true", help="ekbar check kore ber hoye jao (test er jonno)")
+    ap.add_argument("--log", action="store_true", help="telemetry + alert CSV te log koro (forensics)")
     args = ap.parse_args()
 
     engine = RuleEngine()
     fields = engine.field_map()
+    logger = ForensicLogger(fields=fields) if args.log else None
     client = ModbusTcpClient(args.host, port=args.port)
     if not client.connect():
         console.print(f"[red]PLC te connect holo na ({args.host}:{args.port}). PLC chalu ache to?[/]")
@@ -89,6 +92,8 @@ def main():
         if args.once:
             state = read_state(client, args.slave, fields)
             alerts = engine.evaluate(state) if state else []
+            if logger and state:
+                logger.log_state(state); logger.log_alerts(alerts)
             console.print(render(state or {}, alerts, fields, 1))
             return
         with Live(console=console, refresh_per_second=4, screen=False) as live:
@@ -99,6 +104,8 @@ def main():
                     live.update(Panel(Text("PLC read error / disconnected", style="red")))
                 else:
                     alerts = engine.evaluate(state)
+                    if logger:
+                        logger.log_state(state); logger.log_alerts(alerts)
                     live.update(render(state, alerts, fields, polls))
                     for a in alerts:
                         if a.severity == "CRITICAL":

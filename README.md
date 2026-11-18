@@ -28,8 +28,11 @@ reactor-ics-ids/
 ├── guardian/
 │   ├── monitor.py             # live IDS dashboard (polls PLC, raises alerts)
 │   ├── rules.py               # rule engine (threshold / combo / rate)
+│   ├── logger.py              # forensic CSV logging (telemetry + alerts)
+│   ├── report.py              # standalone HTML incident report generator
 │   └── data/rules.json        # ← detection rules live here (edit this, not the code)
-└── tests/test_rules.py
+├── logs/                      # generated: telemetry.csv, alerts.csv, report.html
+└── tests/
 ```
 
 ## Quick start
@@ -47,6 +50,11 @@ python -m guardian.monitor
 # Terminal 3 — launch an attack and watch the alerts fire
 python attacks/attacker.py pump-off
 python attacks/attacker.py rod-eject
+python attacks/attacker.py spoof        # sensor spoofing / false data injection
+
+# Run the monitor with forensic logging, then build an HTML report
+python -m guardian.monitor --log
+python -m guardian.report               # -> logs/report.html
 ```
 
 ## Detections included
@@ -56,6 +64,7 @@ python attacks/attacker.py rod-eject
 | `PUMP_TRIP_AT_POWER` | CRITICAL | Loss-of-coolant attack |
 | `ROD_EJECTION` | CRITICAL | Rapid control-rod withdrawal (Stuxnet-style) |
 | `OVERHEAT_NO_SAFETY` | CRITICAL | Safety-system sabotage |
+| `SENSOR_SPOOF` | CRITICAL | Fake sensor data hiding an attack |
 | `FLOW_LOW`, `TEMP_CRITICAL` | CRITICAL | Core cooling failure |
 | `PUMP_ACTUATOR_MISMATCH` | WARNING | Sensor/actuator spoofing |
 | `TEMP_HIGH`, `PRESS_LOW/HIGH`, `ROD_WITHDRAWN` | WARNING | Unsafe operating band |
